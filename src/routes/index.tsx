@@ -33,6 +33,57 @@ function Index() {
     <>
       <Hero />
 
+{/* Trust Section */}
+<section className="mx-auto max-w-7xl px-4 py-16 sm:px-6">
+  <div className="rounded-2xl border border-border/60 bg-card p-8 text-center">
+    <h2 className="mb-4 text-3xl font-bold">
+      Why Shop With NexasStore?
+    </h2>
+
+    <p className="mb-8 text-muted-foreground">
+      Your trusted destination for quality products at affordable prices.
+    </p>
+
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="rounded-xl border p-4">
+        🚚
+        <h3 className="mt-2 font-semibold">Fast Delivery</h3>
+        <p className="text-sm text-muted-foreground">
+          Delivery all over Pakistan.
+        </p>
+      </div>
+
+      <div className="rounded-xl border p-4">
+        💵
+        <h3 className="mt-2 font-semibold">Cash on Delivery</h3>
+        <p className="text-sm text-muted-foreground">
+          Pay when you receive your order.
+        </p>
+      </div>
+
+      <div className="rounded-xl border p-4">
+        🔄
+        <h3 className="mt-2 font-semibold">7 Day Return Policy</h3>
+        <p className="text-sm text-muted-foreground">
+          Easy returns within 7 days.
+        </p>
+      </div>
+
+      <div className="rounded-xl border p-4">
+        🔒
+        <h3 className="mt-2 font-semibold">Secure Shopping</h3>
+        <p className="text-sm text-muted-foreground">
+          Safe and protected checkout.
+        </p>
+      </div>
+    </div>
+
+    <div className="mt-8 rounded-lg bg-yellow-100 p-4 font-semibold text-black">
+      🔥 Limited Stock Available – Order Now Before It Sells Out!
+    </div>
+  </div>
+</section>
+      
       {/* Feature strip */}
       <section className="border-y border-border/60 bg-card/40">
         <div className="mx-auto grid max-w-7xl gap-6 px-4 py-10 sm:grid-cols-3 sm:px-6">

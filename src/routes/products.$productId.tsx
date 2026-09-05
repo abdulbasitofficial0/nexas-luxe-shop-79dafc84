@@ -16,6 +16,7 @@ import { ReviewsSection } from "@/components/nexas/reviews/ReviewsSection";
 import { ProductCard } from "@/components/nexas/ProductCard";
 import { DELIVERY_CHARGE, DELIVERY_TIME, type Product } from "@/lib/types";
 import { ChatModal } from "@/components/nexas/ChatModal";
+import { getProductImageUrls } from "@/lib/product-display";
 
 export const Route = createFileRoute("/products/$productId")({
   component: ProductDetails,
@@ -66,8 +67,7 @@ const [activeImg, setActiveImg] = useState(0);
 
   const images = useMemo(() => {
     if (!product) return [];
-    const imgs = product.images?.filter(Boolean) ?? [];
-    return imgs.length ? imgs : [product.image].filter(Boolean);
+    return getProductImageUrls(product);
   }, [product]);
 
   const options = product?.options ?? [];

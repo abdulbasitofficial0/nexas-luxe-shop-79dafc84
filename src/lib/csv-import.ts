@@ -436,7 +436,17 @@ export function normalizeImageUrl(
 ): string {
   let url = decodeEntities(raw)
     .replace(/^["'<]+|["'>]+$/g, "")
+    .replace(/\s+/g, "")
     .trim();
+
+  // Fix missing / broken protocol prefixes.
+  if (/^\/\/[^/]+\.[a-z]{2,}/i.test(url)) {
+    url = `https:${url}`;
+  } else if (/^https?:?\/?\/?[a-z0-9.-]+\.[a-z]{2,}/i.test(url) && !/^https?:\/\//i.test(url)) {
+    url = url.replace(/^https?:?\/?\/?/i, "https://");
+  } else if (/^[a-z0-9.-]+\.[a-z]{2,}(?::\d+)?\/\S+/i.test(url)) {
+    url = `https://${url}`;
+  }
 
   if (!/^https?:\/\//i.test(url)) {
     return "";
@@ -491,7 +501,10 @@ export function splitImages(
         /https?:\/\/[^\s"'<>|]+/gi,
       ) ?? [];
 
-    for (const f of found) {
+    // No protocol found → try the whole chunk (bare host or //host).
+    const candidates = found.length ? found : [chunk];
+
+    for (const f of candidates) {
       const normalized =
         normalizeImageUrl(f);
 
@@ -505,6 +518,61 @@ export function splitImages(
   }
 
   return urls;
+}
+
+/**
+ * Collect images from every known image column in a row.
+ * Supports: Images, Image, Image URL, Product Image, Image 1..N,
+ * Featured Image, Gallery Images, Thumbnail, plus any header containing "image".
+ */
+export function readRowImages(row: CsvRow): string[] {
+  const urls: string[] = [];
+  const push = (value: string) => {
+    for (const u of splitImages(value)) {
+      if (!urls.includes(u)) urls.push(u);
+    }
+  };
+
+  // Preferred order first so the "main" image is predictable.
+  push(
+    col(
+      row,
+      "Images",
+      "Image",
+      "Image URL",
+      "Product Image",
+      "Product Images",
+      "Featured Image",
+      "Main Image",
+      "Image 1",
+      "images",
+    ),
+  );
+
+  // Then every other image-like column (Image 2, Gallery Images, Thumbnail, image_url, …).
+  for (const key of Object.keys(row)) {
+    const k = key.trim().toLowerCase().replace(/^\ufeff/, "");
+    if (/(image|img|picture|photo|thumbnail|gallery)/.test(k)) {
+      const v = row[key];
+      if (v != null && String(v).trim()) push(String(v));
+    }
+  }
+
+  return urls;
+}
+
+/**
+ * Read the first usable price from the row.
+ * Strips "PKR", "Rs", commas and spaces, and skips zero/blank values.
+ */
+export function readRowPrice(row: CsvRow, names: string[]): number {
+  for (const name of names) {
+    const raw = col(row, name);
+    if (!raw) continue;
+    const n = num(raw);
+    if (n > 0) return n;
+  }
+  return 0;
 }
 
 /* -------------------------------------------------------------------------- */

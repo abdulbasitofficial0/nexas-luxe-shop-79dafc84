@@ -490,7 +490,42 @@ function ProductsPanel() {
   const { products, loading } = useProducts();
   const [open, setOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [bulkOpen, setBulkOpen] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
+  /** Ids of products ticked for bulk deletion. */
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+
+  const allSelected = products.length > 0 && products.every((p) => selected.has(p.id));
+  const toggleOne = (id: string, on: boolean) =>
+    setSelected((s) => {
+      const next = new Set(s);
+      if (on) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  const toggleAll = (on: boolean) =>
+    setSelected(on ? new Set(products.map((p) => p.id)) : new Set());
+
+  const deleteSelected = async () => {
+    if (!db || selected.size === 0) return;
+    setBulkDeleting(true);
+    try {
+      const ids = Array.from(selected);
+      // Firestore batches cap at 500 writes.
+      for (let i = 0; i < ids.length; i += 450) {
+        const batch = writeBatch(db);
+        ids.slice(i, i + 450).forEach((id) => batch.delete(doc(db, "products", id)));
+        await batch.commit();
+      }
+      toast.success(`${ids.length} product(s) deleted`);
+      setSelected(new Set());
+    } catch {
+      toast.error("Failed to delete selected products");
+    } finally {
+      setBulkDeleting(false);
+    }
+  };
 
   /** Existing categories from Firebase products (used by the import dialog). */
   const categories = useMemo(
@@ -518,12 +553,59 @@ function ProductsPanel() {
           <Button variant="goldOutline" onClick={() => setImportOpen(true)}>
             <Upload className="size-4" /> Import from Markaz
           </Button>
+          <Button variant="goldOutline" onClick={() => setBulkOpen(true)}>
+            <Layers className="size-4" /> Bulk Add
+          </Button>
           <Button variant="gold" onClick={openNew}>
             <Plus className="size-4" /> Add Product
           </Button>
         </div>
       </div>
 
+      {products.length > 0 && (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border/60 bg-card px-3 py-2">
+          <label className="flex cursor-pointer items-center gap-2 text-sm">
+            <Checkbox
+              checked={allSelected ? true : selected.size > 0 ? "indeterminate" : false}
+              onCheckedChange={(v) => toggleAll(v === true)}
+              aria-label="Select all products"
+            />
+            Select All
+            {selected.size > 0 && (
+              <span className="text-muted-foreground">({selected.size} selected)</span>
+            )}
+          </label>
+          {selected.size > 0 && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm" disabled={bulkDeleting}>
+                  {bulkDeleting ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="size-4" />
+                  )}
+                  Delete Selected ({selected.size})
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete {selected.size} product(s)?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently remove the selected products from your store. This
+                    cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={deleteSelected}>
+                    Delete {selected.size}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+        </div>
+      )}
 
       {loading ? (
         <div className="flex justify-center py-16">
@@ -536,17 +618,24 @@ function ProductsPanel() {
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {products.map((p) => (
-            <div key={p.id} className="flex gap-3 rounded-xl border border-border/60 bg-card p-3">
-              <img
-                src={p.image}
+            <div
+              key={p.id}
+              className={`flex gap-3 rounded-xl border bg-card p-3 transition-colors ${
+                selected.has(p.id) ? "border-primary/60 bg-primary/5" : "border-border/60"
+              }`}
+            >
+              <Checkbox
+                className="mt-1"
+                checked={selected.has(p.id)}
+                onCheckedChange={(v) => toggleOne(p.id, v === true)}
+                aria-label={`Select ${p.name}`}
+              />
+              <ProductImage
+                src={p.image || p.images?.[0]}
                 alt={p.name}
                 className="size-16 shrink-0 rounded-lg object-cover"
-                onError={(e) => {
-                  (e.currentTarget as HTMLImageElement).src =
-                    "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><rect width='100%25' height='100%25' fill='%23222'/></svg>";
-                }}
               />
-              <div className="flex-1">
+              <div className="min-w-0 flex-1">
                 <p className="line-clamp-1 font-medium">{p.name}</p>
                 <p className="text-xs text-muted-foreground">{p.category}</p>
                 <p className="text-sm text-primary">Rs {p.price.toLocaleString()}</p>

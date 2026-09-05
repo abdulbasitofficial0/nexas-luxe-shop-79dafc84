@@ -19,6 +19,7 @@ import { useFirebase } from "@/lib/firebase";
 import { addToWishlist, removeFromWishlist, useWishlist } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import type { Product } from "@/lib/types";
+import { ProductImage } from "./ProductImage";
 
 /** Stable display rating derived from the product id (no ratings in the data model yet). */
 function displayRating(id: string) {
@@ -86,8 +87,8 @@ export function ProductCard({ product }: { product: Product }) {
             className="block size-full"
             aria-label={product.name}
           >
-            <img
-              src={product.image}
+            <ProductImage
+              src={product.image || product.images?.[0]}
               alt={product.name}
               loading="lazy"
               decoding="async"
@@ -169,8 +170,8 @@ export function ProductCard({ product }: { product: Product }) {
             <DialogTitle className="font-display">{product.name}</DialogTitle>
             <DialogDescription>{product.category}</DialogDescription>
           </DialogHeader>
-          <img
-            src={product.image}
+          <ProductImage
+            src={product.image || product.images?.[0]}
             alt={product.name}
             className="aspect-square w-full rounded-xl object-cover"
           />

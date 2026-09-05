@@ -1007,16 +1007,7 @@ export function mapRows(
       readAttributes(row),
     );
 
-    const varImages =
-      splitImages(
-        col(
-          row,
-          "Images",
-          "Image",
-          "Image URL",
-          "images",
-        ),
-      );
+    const varImages = readRowImages(row);
 
     for (const img of varImages) {
       if (

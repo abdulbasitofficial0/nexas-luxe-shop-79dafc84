@@ -825,50 +825,39 @@ export function mapRows(
       "sku",
     );
 
-   const basePrice = num(
-  col(
-    row,
-    "Regular price",
-    "regular_price",
-    "Price",
-    "Regular Price",
-    "RegularPrice",
-    "Product Price",
-    "Product price",
-    "Selling Price",
-    "Selling price",
-    "Cost Price",
-    "Cost price",
-    "Purchase Price",
-    "Purchase price",
-  ),
-);
+    // Prices: strip "PKR"/"Rs"/commas/spaces; first non-zero column wins.
+    const salePriceRaw = readRowPrice(row, [
+      "Sale price",
+      "sale_price",
+      "Sale Price",
+      "Discounted Price",
+      "Discounted price",
+    ]);
 
-const salePriceRaw = num(
-  col(
-    row,
-    "Sale price",
-    "sale_price",
-    "Sale Price",
-    "Discounted Price",
-    "Discounted price",
-    "Selling Price",
-    "Selling price",
-  ),
-);
+    let basePrice = readRowPrice(row, [
+      "Regular price",
+      "regular_price",
+      "Regular Price",
+      "RegularPrice",
+      "Price",
+      "price",
+      "Wholesale Price",
+      "Wholesale price",
+      "wholesale_price",
+      "Product Price",
+      "Product price",
+      "Selling Price",
+      "Selling price",
+      "Cost Price",
+      "Cost price",
+      "Purchase Price",
+      "Purchase price",
+    ]);
 
-const images =
-      splitImages(
-        col(
-          row,
-          "Images",
-          "Image",
-          "Image URL",
-          "Gallery Images",
-          "Featured Image",
-          "images",
-        ),
-      );
+    // Last resort: a sale price is still a valid price.
+    if (basePrice <= 0 && salePriceRaw > 0) basePrice = salePriceRaw;
+
+    const images = readRowImages(row);
 
     const stockRaw = col(
       row,
